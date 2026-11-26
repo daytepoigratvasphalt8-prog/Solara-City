@@ -1,0 +1,55 @@
+
+name: Build Solara City Android APK
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+
+jobs:
+  build:
+    name: Build Android APK
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Extract Unity project
+        run: |
+          mkdir -p project
+          unzip -o SolaraCity_Unity6_Android-v2.zip -d project
+          echo "Extracted files:"
+          find project -maxdepth 3 -type d | head -50
+
+      - name: Locate Unity project
+        run: |
+          PROJECT_FILE=$(find project -name ProjectVersion.txt -print -quit)
+          if [ -z "$PROJECT_FILE" ]; then
+            echo "Unity project not found!"
+            exit 1
+          fi
+          echo "UNITY_PROJECT_PATH=$(dirname "$PROJECT_FILE")" >> "$GITHUB_ENV"
+
+      - name: Build Android APK
+        uses: game-ci/unity-builder@v4
+        env:
+          UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
+          UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
+          UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
+        with:
+          projectPath: ${{ env.UNITY_PROJECT_PATH }}
+          targetPlatform: Android
+          buildMethod: SolaraCity.Editor.SolaraProjectSetup.BuildAndroid
+          buildsPath: build
+          buildName: SolaraCity.apk
+          unityVersion: 6000.0.32f1
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: SolaraCity-Android-APK
+          path: build/Android/**/*.apk
+          if-no-files-found: error
+          
