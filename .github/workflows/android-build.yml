@@ -34,7 +34,20 @@ jobs:
             exit 1
           fi
 
-          echo "UNITY_PROJECT_PATH=$(dirname "$PROJECT_FILE")" >> "$GITHUB_ENV"
+          UNITY_PROJECT_PATH="${PROJECT_FILE%/ProjectSettings/ProjectVersion.txt}"
+
+          if [ "$UNITY_PROJECT_PATH" = "$PROJECT_FILE" ]; then
+            echo "ERROR: Unexpected Unity project structure."
+            exit 1
+          fi
+
+          if [ ! -d "$UNITY_PROJECT_PATH/Assets" ]; then
+            echo "ERROR: Unity Assets folder not found."
+            exit 1
+          fi
+
+          echo "UNITY_PROJECT_PATH=$UNITY_PROJECT_PATH" >> "$GITHUB_ENV"
+          echo "Unity project: $UNITY_PROJECT_PATH"
 
       - name: Build Android APK
         uses: game-ci/unity-builder@v4
